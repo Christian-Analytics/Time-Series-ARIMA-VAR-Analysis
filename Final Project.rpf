@@ -1,0 +1,2336 @@
+OPEN DATA "C:\Users\chris\Downloads\final_project.xlsx"
+CALENDAR(M) 2000:12
+DATA(FORMAT=XLSX,ORG=COLUMNS,LEFT=2) 2000:12 2024:01 CONS_CONF<<"consumer_confidence" FED_FUND<<"federal_funds_rate" $
+ GOVT_JOBS<<"govt_job_openings" HOUSING_PRICES<<"housing_price_index"
+*Preliminary Graph
+GRAPH(STYLE=LINE,HEADER="Consumer Confidence",VLABEL="Index",HLABEL="Year",KEY=BELOW) 1
+# CONS_CONF
+GRAPH(STYLE=LINE,HEADER="Federal Funds Rate",VLABEL="Interest Rate",HLABEL="Year",KEY=BELOW) 1
+# FED_FUND
+GRAPH(STYLE=LINE,HEADER="Government Job Openings",VLABEL="Number of Job Openings",HLABEL="Year",KEY=BELOW) $
+ 1
+# GOVT_JOBS
+GRAPH(STYLE=LINE,HEADER="Housing Prices",VLABEL="Index",HLABEL="Year",KEY=BELOW) 1
+# HOUSING_PRICES
+
+@bjident CONS_CONF
+@bjident HOUSING_PRICES
+@bjident FED_FUND
+@bjident GOVT_JOBS
+
+cmom(corr,print)
+#CONS_CONF HOUSING_PRICES FED_FUND GOVT_JOBS
+
+Correlation Matrix
+                CONS_CONF   HOUSING_PRICES   FED_FUND    GOVT_JOBS
+CONS_CONF       1.000000000   -0.309086671  0.111522668 -0.220913557
+HOUSING_PRICES -0.309086671    1.000000000  0.177606998  0.931548691
+FED_FUND        0.111522668    0.177606998  1.000000000  0.169682267
+GOVT_JOBS      -0.220913557    0.931548691  0.169682267  1.000000000
+
+*Let's declare variables for COVID, HOUSING CRASH AND TIME
+*COVID SEEMED TO HAVE ABOUT A 2 YEAR EFFECT
+SET COVID * 2024:01 = T>=2020:04.AND.T<=2022:01
+SET HCRASH * 2024:01 = T>2008:01.AND.T<=2009:12
+SET TIME * 2024:01 = T
+
+*We'll start forecasting CONS_CONF (already stationary)
+
+*First let's try ARMA(3,1) with COVID and HCRASH
+BOXJENK(REGRESSORS,CONST,AR=3,MA=1) CONS_CONF
+# COVID HCRASH
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     8 Iterations. Final criterion was  0.0000065 <=  0.0000100
+
+Dependent Variable CONS_CONF
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+Degrees of Freedom                        256
+Centered R^2                        0.9935155
+R-Bar^2                             0.9933635
+Uncentered R^2                      0.9999987
+Mean of Dependent Variable       99.647979658
+Std Error of Dependent Variable   1.409185676
+Standard Error of Estimate        0.114798546
+Sum of Squared Residuals         3.3737487897
+Log Likelihood                       199.6502
+Durbin-Watson Statistic                1.9842
+Q(36-4)                               26.8986
+Significance Level of Q             0.7225698
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                      99.17804637   0.85977680    115.35325  0.00000000
+2.  AR{1}                          1.97194423   0.07275676     27.10324  0.00000000
+3.  AR{2}                         -1.46521550   0.13225004    -11.07913  0.00000000
+4.  AR{3}                          0.48030510   0.06848451      7.01334  0.00000000
+5.  MA{1}                          0.46978363   0.07448446      6.30714  0.00000000
+6.  COVID                         -0.04798531   0.03702271     -1.29610  0.19610663
+7.  HCRASH                        -0.04721108   0.03698447     -1.27651  0.20293174
+
+@regcrits
+
+Information Criteria
+AIC          -1.457
+SBC          -1.349
+Hannan-Quinn -1.414
+(log) FPE    -1.457
+
+
+*hmmm COVID and HOUSING CRASH not significantly different from 0, ARMA(3,1) has both lower AIC and SBC...
+@DFUNIT(LAGS=4) CONS_CONF
+
+Dickey-Fuller Unit Root Test, Series CONS_CONF
+Regression Run From 2001:05 to 2024:01
+Observations        274
+With intercept
+Using fixed lags 4
+Null is unit root. Reject in left tail.
+
+Sig Level    Crit Value
+1%(**)         -3.45578
+5%(*)          -2.87220
+10%            -2.57241
+
+T-Statistic    -2.00878
+
+*FOUND EVIDENCE OF A UNIT ROOT
+BOXJENK(REGRESSORS,CONST,AR=3) CONS_CONF
+# COVID HCRASH
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     5 Iterations. Final criterion was  0.0000031 <=  0.0000100
+
+Dependent Variable CONS_CONF
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+Degrees of Freedom                        257
+Centered R^2                        0.9927537
+R-Bar^2                             0.9926127
+Uncentered R^2                      0.9999986
+Mean of Dependent Variable       99.647979658
+Std Error of Dependent Variable   1.409185676
+Standard Error of Estimate        0.121118523
+Sum of Squared Residuals         3.7701120017
+Regression F(5,257)                 7041.8717
+Significance Level of F             0.0000000
+Log Likelihood                       185.0432
+Durbin-Watson Statistic                1.6133
+Q(36-3)                               44.6456
+Significance Level of Q             0.0849021
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                      98.84730719   1.20751212     81.86030  0.00000000
+2.  AR{1}                          2.20867578   0.04715583     46.83781  0.00000000
+3.  AR{2}                         -1.87004306   0.08687195    -21.52643  0.00000000
+4.  AR{3}                          0.65404587   0.04704773     13.90175  0.00000000
+5.  COVID                         -0.05610449   0.05037965     -1.11363  0.26647669
+6.  HCRASH                        -0.05737295   0.05033916     -1.13973  0.25546074
+
+@REGCRITS
+
+Information Criteria
+AIC          -1.354
+SBC          -1.259
+Hannan-Quinn -1.316
+(log) FPE    -1.354
+
+BOXJENK(CONST,AR=3) CONS_CONF * 2023:01
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     4 Iterations. Final criterion was  0.0000000 <=  0.0000100
+
+Dependent Variable CONS_CONF
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+Degrees of Freedom                        259
+Centered R^2                        0.9926820
+R-Bar^2                             0.9925973
+Uncentered R^2                      0.9999985
+Mean of Dependent Variable       99.647979658
+Std Error of Dependent Variable   1.409185676
+Standard Error of Estimate        0.121244989
+Sum of Squared Residuals         3.8073899880
+Regression F(3,259)                11711.1365
+Significance Level of F             0.0000000
+Log Likelihood                       183.7493
+Durbin-Watson Statistic                1.6163
+Q(36-3)                               44.2811
+Significance Level of Q             0.0907702
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                      98.84363271   1.19836154     82.48231  0.00000000
+2.  AR{1}                          2.20864317   0.04698447     47.00794  0.00000000
+3.  AR{2}                         -1.86912105   0.08656066    -21.59319  0.00000000
+4.  AR{3}                          0.65312289   0.04687839     13.93228  0.00000000
+
+@REGCRITS
+
+Information Criteria
+AIC          -1.359
+SBC          -1.291
+Hannan-Quinn -1.332
+(log) FPE    -1.359
+
+BOXJENK(CONST,AR=3,MA=1) CONS_CONF * 2023:01
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     9 Iterations. Final criterion was  0.0000061 <=  0.0000100
+
+Dependent Variable CONS_CONF
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+Degrees of Freedom                        258
+Centered R^2                        0.9934319
+R-Bar^2                             0.9933301
+Uncentered R^2                      0.9999987
+Mean of Dependent Variable       99.647979658
+Std Error of Dependent Variable   1.409185676
+Standard Error of Estimate        0.115087341
+Sum of Squared Residuals         3.4172347768
+Log Likelihood                       197.9661
+Durbin-Watson Statistic                1.9833
+Q(36-4)                               27.1968
+Significance Level of Q             0.7084407
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                      99.16965175   0.85957702    115.37029  0.00000000
+2.  AR{1}                          1.97411024   0.07278773     27.12147  0.00000000
+3.  AR{2}                         -1.46815916   0.13228915    -11.09811  0.00000000
+4.  AR{3}                          0.48112237   0.06840549      7.03339  0.00000000
+5.  MA{1}                          0.46227749   0.07478586      6.18135  0.00000000
+
+@REGCRITS
+
+Information Criteria
+AIC          -1.460
+SBC          -1.378
+Hannan-Quinn -1.427
+(log) FPE    -1.460
+
+*FOUND EVIDENCE OF UNIT ROOT IN DF TEST; LET'S TRY DIFFERENCED DATA
+BOXJENK(DIFFS=1,CONST,AR=3,MA=1) CONS_CONF * 2023:01
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in    20 Iterations. Final criterion was  0.0000082 <=  0.0000100
+
+Dependent Variable CONS_CONF, differenced 1 times
+Monthly Data From 2001:04 To 2023:01
+Usable Observations                       262
+Degrees of Freedom                        257
+Centered R^2                        0.9933459
+R-Bar^2                             0.9932423
+Uncentered R^2                      0.9999987
+Mean of Dependent Variable       99.644511260
+Std Error of Dependent Variable   1.410757512
+Standard Error of Estimate        0.115971571
+Sum of Squared Residuals         3.4564971343
+Log Likelihood                       195.2177
+Durbin-Watson Statistic                1.9999
+Q(36-4)                               26.6163
+Significance Level of Q             0.7357266
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.013160008  0.020915998     -0.62918  0.52978759
+2.  AR{1}                         1.039521505  0.175151044      5.93500  0.00000001
+3.  AR{2}                        -0.561631336  0.224298250     -2.50395  0.01290208
+4.  AR{3}                         0.037354797  0.135421537      0.27584  0.78289195
+5.  MA{1}                         0.416697309  0.165745686      2.51408  0.01254622
+
+@REGCRITS
+
+Information Criteria
+AIC          -1.444
+SBC          -1.363
+Hannan-Quinn -1.412
+(log) FPE    -1.444
+
+BOXJENK(DIFFS=1,CONST,AR=2,MA=1) CONS_CONF * 2023:01
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     9 Iterations. Final criterion was  0.0000054 <=  0.0000100
+
+Dependent Variable CONS_CONF, differenced 1 times
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+Degrees of Freedom                        259
+Centered R^2                        0.9933582
+R-Bar^2                             0.9932813
+Uncentered R^2                      0.9999987
+Mean of Dependent Variable       99.647979658
+Std Error of Dependent Variable   1.409185676
+Standard Error of Estimate        0.115507993
+Sum of Squared Residuals         3.4556029656
+Log Likelihood                       196.4978
+Durbin-Watson Statistic                1.9905
+Q(36-3)                               27.1706
+Significance Level of Q             0.7521692
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.013074714  0.020383491     -0.64144  0.52180640
+2.  AR{1}                         0.997297729  0.070539020     14.13824  0.00000000
+3.  AR{2}                        -0.504871151  0.066061521     -7.64244  0.00000000
+4.  MA{1}                         0.454548714  0.074001376      6.14244  0.00000000
+
+@REGCRITS
+
+Information Criteria
+AIC          -1.456
+SBC          -1.388
+Hannan-Quinn -1.429
+(log) FPE    -1.456
+
+*If we difference the data, it leads to a lower SBC, but higher AIC; since data is already stationary and due to difference in MSE, we'll keep the model with the lower AIC, ARMA(3,1)
+BOXJENK(CONST,AR=3,MA=1,DEFINE=CONS_CONF_ARMA) CONS_CONF * 2023:01
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     9 Iterations. Final criterion was  0.0000061 <=  0.0000100
+
+Dependent Variable CONS_CONF
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+Degrees of Freedom                        258
+Centered R^2                        0.9934319
+R-Bar^2                             0.9933301
+Uncentered R^2                      0.9999987
+Mean of Dependent Variable       99.647979658
+Std Error of Dependent Variable   1.409185676
+Standard Error of Estimate        0.115087341
+Sum of Squared Residuals         3.4172347768
+Log Likelihood                       197.9661
+Durbin-Watson Statistic                1.9833
+Q(36-4)                               27.1968
+Significance Level of Q             0.7084407
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                      99.16965175   0.85957702    115.37029  0.00000000
+2.  AR{1}                          1.97411024   0.07278773     27.12147  0.00000000
+3.  AR{2}                         -1.46815916   0.13228915    -11.09811  0.00000000
+4.  AR{3}                          0.48112237   0.06840549      7.03339  0.00000000
+5.  MA{1}                          0.46227749   0.07478586      6.18135  0.00000000
+
+UFORECAST(FROM=2023:02,TO=2024:01,EQUATION=CONS_CONF_ARMA,STDERRS=CONS_CONF_STDE_A,PRINT) CONS_CONF_ARMA_F
+
+  Entry    CONS_CONF
+  2023:02 97.54865886
+  2023:03 97.62794816
+  2023:04 97.63145420
+  2023:05 97.61665051
+  2023:06 97.62042685
+  2023:07 97.65130275
+  2023:08 97.69958853
+  2023:09 97.75139613
+  2023:10 97.79763392
+  2023:11 97.83608199
+  2023:12 97.86902406
+  2024:01 97.89985350
+
+@uforeerrors CONS_CONF CONS_CONF_ARMA_F 2023:02 2024:01
+
+Forecast Analysis for CONS_CONF
+From 2023:02 to 2024:01
+Mean Error                 0.00351004
+Mean Absolute Error        0.28575015
+Root Mean Square Error     0.37586217
+Mean Square Error            0.141272
+Theil's U                    1.154557
+
+Mean Pct Error               0.000019
+Mean Abs Pct Error           0.002917
+Root Mean Square Pct Error   0.003821
+Theil's Relative U           1.154164
+
+*hmmm I wonder if using our ARIMA(2,1,1) model would yield a lower MSE...
+BOXJENK(DIFFS=1,CONST,AR=2,MA=1,DEFINE=CONSCONF_ARIMA_F) CONS_CONF * 2023:01
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     9 Iterations. Final criterion was  0.0000054 <=  0.0000100
+
+Dependent Variable CONS_CONF, differenced 1 times
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+Degrees of Freedom                        259
+Centered R^2                        0.9933582
+R-Bar^2                             0.9932813
+Uncentered R^2                      0.9999987
+Mean of Dependent Variable       99.647979658
+Std Error of Dependent Variable   1.409185676
+Standard Error of Estimate        0.115507993
+Sum of Squared Residuals         3.4556029656
+Log Likelihood                       196.4978
+Durbin-Watson Statistic                1.9905
+Q(36-3)                               27.1706
+Significance Level of Q             0.7521692
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.013074714  0.020383491     -0.64144  0.52180640
+2.  AR{1}                         0.997297729  0.070539020     14.13824  0.00000000
+3.  AR{2}                        -0.504871151  0.066061521     -7.64244  0.00000000
+4.  MA{1}                         0.454548714  0.074001376      6.14244  0.00000000
+
+UFORECAST(FROM=2023:02,TO=2024:01,EQUATION=CONSCONF_ARIMA_F,PRINT) CONS_ARIMA_FORE
+
+  Entry    CONS_CONF
+  2023:02 97.52665549
+  2023:03 97.55172121
+  2023:04 97.48183362
+  2023:05 97.39284354
+  2023:06 97.33274180
+  2023:07 97.31109460
+  2023:08 97.31321317
+  2023:09 97.31961868
+  2023:10 97.31830089
+  2023:11 97.30711634
+  2023:12 97.28999094
+  2024:01 97.27192220
+
+@uforeerrors CONS_CONF CONS_ARIMA_FORE 2023:02 2024:01
+
+Forecast Analysis for CONS_CONF
+From 2023:02 to 2024:01
+Mean Error                 0.34792396
+Mean Absolute Error        0.44696460
+Root Mean Square Error     0.61469111
+Mean Square Error            0.377845
+Theil's U                    1.888181
+
+Mean Pct Error               0.003538
+Mean Abs Pct Error           0.004555
+Root Mean Square Pct Error   0.006241
+Theil's Relative U           1.886450
+
+
+*It doesn't, let's keep our ARMA(3,1) model
+
+GRAPH(STYLE=LINE,HEADER="Consumer Confidence Actual versus Forecast",VLABEL="Index",HLABEL="Month",KEY=BELOW, MAX=100,MIN=95) $
+ 3
+# CONS_CONF_TRUNC
+# CONS_CONF_ARMA_F
+# CONS_ARIMA_FORE
+
+
+
+*We can now move on to our 2nd variable, housing prices
+
+
+@bjautofit(pmax=5,qmax=5,crit=SBC) HOUSING_PRICES
+
+BIC analysis of models for series HOUSING_PRICES
+   MA
+AR    0         1         2          3         4         5
+ 0 3838.2139 3465.7545 3215.8914  2958.8296 2584.4722 2378.1869
+ 1 1138.6854  931.3911  847.8495   794.1699  776.2157  767.4900
+ 2  690.6713 2405.8604  686.7825* 2273.0316  696.2989  701.8675
+ 3  687.2675  699.5293 2552.1781  1537.9589  698.6159  703.9354
+ 4  689.3634  690.9006  694.0901  2496.4134  703.9134 1475.4069
+ 5  693.7328  697.3447  703.9213   706.2561  708.5432  717.2180
+
+*ARMA(2,2) seems to be the choice without a trend... let's try now with a trend
+
+BOXJENK(REGRESSORS,CONST,AR=2,MA=2) HOUSING_PRICES * 2023:01
+# TIME HCRASH
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+NO CONVERGENCE IN 100 ITERATIONS
+LAST CRITERION WAS  0.1355711
+TRY INCREASING ITERS OPTION
+
+Dependent Variable HOUSING_PRICES
+Monthly Data From 2001:02 To 2023:01
+Usable Observations                       264
+Degrees of Freedom                        257
+Centered R^2                        0.9998212
+R-Bar^2                             0.9998170
+Uncentered R^2                      0.9999890
+Mean of Dependent Variable       223.76700758
+Std Error of Dependent Variable   57.36807657
+Standard Error of Estimate         0.77610248
+Sum of Squared Residuals         154.80010965
+Log Likelihood                      -304.1363
+Durbin-Watson Statistic                2.0273
+Q(36-4)                               40.2874
+Significance Level of Q             0.1492237
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                      -6201.53161  48882.69046     -0.12687  0.89914598
+2.  AR{1}                             1.92262      0.03367     57.10419  0.00000000
+3.  AR{2}                            -0.92254      0.03381    -27.28757  0.00000000
+4.  MA{1}                            -0.23148      0.07404     -3.12630  0.00197361
+5.  MA{2}                            -0.11283      0.06971     -1.61866  0.10674785
+6.  TIME                             -6.53812     27.81272     -0.23508  0.81433653
+7.  HCRASH                           -0.35215      0.45199     -0.77910  0.43664050
+*NO CONVERGENCE- LET'S TRY DIFFERENCING
+BOXJENK(DIFFS=1,REGRESSORS,CONST,AR=2,MA=1) HOUSING_PRICES * 2023:01
+# HCRASH TIME
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in    11 Iterations. Final criterion was  0.0000018 <=  0.0000100
+
+Dependent Variable HOUSING_PRICES, differenced 1 times
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+Degrees of Freedom                        257
+Centered R^2                        0.9998213
+R-Bar^2                             0.9998178
+Uncentered R^2                      0.9999891
+Mean of Dependent Variable       224.05897338
+Std Error of Dependent Variable   57.28060165
+Standard Error of Estimate         0.77309573
+Sum of Squared Residuals         153.60299099
+Log Likelihood                      -302.4624
+Durbin-Watson Statistic                1.9830
+Q(36-3)                               40.1499
+Significance Level of Q             0.1829119
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.166306954  0.980870096     -0.16955  0.86549708
+2.  AR{1}                         1.331030814  0.194255956      6.85194  0.00000000
+3.  AR{2}                        -0.367841730  0.172000055     -2.13861  0.03340990
+4.  MA{1}                        -0.668286478  0.168459245     -3.96705  0.00009443
+5.  HCRASH                       -0.590749867  0.515477265     -1.14603  0.25285074
+6.  TIME                          0.007580946  0.005783800      1.31072  0.19112222
+
+@regcrits
+
+Information Criteria
+AIC          2.353
+SBC          2.448
+Hannan-Quinn 2.392
+(log) FPE    2.353
+
+BOXJENK(DIFFS=1,REGRESSORS,CONST,AR=2) HOUSING_PRICES
+# TIME HCRASH
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     7 Iterations. Final criterion was  0.0000021 <=  0.0000100
+
+Dependent Variable HOUSING_PRICES, differenced 1 times
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+Degrees of Freedom                        258
+Centered R^2                        0.9998173
+R-Bar^2                             0.9998144
+Uncentered R^2                      0.9999888
+Mean of Dependent Variable       224.05897338
+Std Error of Dependent Variable   57.28060165
+Standard Error of Estimate         0.78027930
+Sum of Squared Residuals         157.07963129
+Regression F(4,258)               352920.5196
+Significance Level of F             0.0000000
+Log Likelihood                      -305.4056
+Durbin-Watson Statistic                2.0299
+Q(36-2)                               42.7816
+Significance Level of Q             0.1435902
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.055009776  0.645616304     -0.08521  0.93216445
+2.  AR{1}                         0.703129714  0.061698510     11.39622  0.00000000
+3.  AR{2}                         0.137733019  0.062371806      2.20826  0.02810603
+4.  TIME                          0.007466399  0.003996808      1.86809  0.06288295
+5.  HCRASH                       -0.795067300  0.526886314     -1.50899  0.13252442
+
+@regcrits
+
+Information Criteria
+AIC          2.368
+SBC          2.450
+Hannan-Quinn 2.401
+(log) FPE    2.368
+
+BOXJENK(REGRESSORS,CONST,AR=2,MA=1) HOUSING_PRICES * 2023:01
+# HCRASH TIME
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in    15 Iterations. Final criterion was  0.0000004 <=  0.0000100
+
+Dependent Variable HOUSING_PRICES
+Monthly Data From 2001:02 To 2023:01
+Usable Observations                       264
+Degrees of Freedom                        258
+Centered R^2                        0.9998191
+R-Bar^2                             0.9998156
+Uncentered R^2                      0.9999889
+Mean of Dependent Variable       223.76700758
+Std Error of Dependent Variable   57.36807657
+Standard Error of Estimate         0.77905800
+Sum of Squared Residuals         156.58829404
+Log Likelihood                      -305.6523
+Durbin-Watson Statistic                1.9350
+Q(36-3)                               45.3453
+Significance Level of Q             0.0745179
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                      -19.7956853  453.4960423     -0.04365  0.96521613
+2.  AR{1}                           1.9164468    0.0333563     57.45386  0.00000000
+3.  AR{2}                          -0.9172272    0.0338360    -27.10803  0.00000000
+4.  MA{1}                          -0.2725871    0.0729542     -3.73642  0.00022983
+5.  HCRASH                         -0.1953149    0.4594618     -0.42509  0.67112177
+6.  TIME                            1.4230875    1.5342172      0.92757  0.35449972
+
+@regcrits
+
+Information Criteria
+AIC          2.369
+SBC          2.463
+Hannan-Quinn 2.407
+(log) FPE    2.369
+
+LINREG HOUSING_PRICES
+# Constant TIME HCRASH COVID
+
+Linear Regression - Estimation by Least Squares
+Dependent Variable HOUSING_PRICES
+Monthly Data From 2000:12 To 2023:01
+Usable Observations                       266
+Degrees of Freedom                        262
+Centered R^2                        0.6927409
+R-Bar^2                             0.6892227
+Uncentered R^2                      0.9809096
+Mean of Dependent Variable       223.17853383
+Std Error of Dependent Variable   57.55122604
+Standard Error of Estimate        32.08331442
+Sum of Squared Residuals         269686.83489
+Regression F(3,262)                  196.9002
+Significance Level of F             0.0000000
+Log Likelihood                     -1297.9999
+Durbin-Watson Statistic                0.0189
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  Constant                      148.4723775    4.2025393     35.32921  0.00000000
+2.  TIME                            0.5348088    0.0285642     18.72307  0.00000000
+3.  HCRASH                         -4.1945061    7.0754790     -0.59282  0.55381100
+4.  COVID                          44.3962334    7.9160378      5.60839  0.00000005
+
+*LET'S REMOVE THE HOUSING CRASH VARIABLE
+
+LINREG HOUSING_PRICES
+# Constant TIME COVID
+
+Linear Regression - Estimation by Least Squares
+Dependent Variable HOUSING_PRICES
+Monthly Data From 2000:12 To 2023:01
+Usable Observations                       266
+Degrees of Freedom                        263
+Centered R^2                        0.6923288
+R-Bar^2                             0.6899891
+Uncentered R^2                      0.9808840
+Mean of Dependent Variable       223.17853383
+Std Error of Dependent Variable   57.55122604
+Standard Error of Estimate        32.04373110
+Sum of Squared Residuals         270048.58480
+Regression F(2,263)                  295.9043
+Significance Level of F             0.0000000
+Log Likelihood                     -1298.1781
+Durbin-Watson Statistic                0.0188
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  Constant                     147.83837823   4.05917026     36.42084  0.00000000
+2.  TIME                           0.53673959   0.02834285     18.93739  0.00000000
+3.  COVID                         44.56007613   7.90145104      5.63948  0.00000004
+
+@regcrits
+
+Information Criteria
+AIC          9.791
+SBC          9.845
+Hannan-Quinn 9.812
+(log) FPE    9.791
+
+BOXJENK(DIFFS=1,REGRESSORS,CONST,AR=2,MA=1) HOUSING_PRICES * 2023:01
+# TIME COVID
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in    19 Iterations. Final criterion was  0.0000054 <=  0.0000100
+
+Dependent Variable HOUSING_PRICES, differenced 1 times
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+Degrees of Freedom                        257
+Centered R^2                        0.9998216
+R-Bar^2                             0.9998181
+Uncentered R^2                      0.9999891
+Mean of Dependent Variable       224.05897338
+Std Error of Dependent Variable   57.28060165
+Standard Error of Estimate         0.77252298
+Sum of Squared Residuals         153.37547896
+Log Likelihood                      -302.2675
+Durbin-Watson Statistic                1.9759
+Q(36-3)                               39.8739
+Significance Level of Q             0.1909347
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.253814593  1.031064881     -0.24617  0.80574912
+2.  AR{1}                         1.392696998  0.160356802      8.68499  0.00000000
+3.  AR{2}                        -0.420442265  0.143307077     -2.93386  0.00365024
+4.  MA{1}                        -0.744692933  0.132200271     -5.63307  0.00000005
+5.  TIME                          0.007235520  0.006002637      1.20539  0.22916137
+6.  COVID                         0.771935212  0.496125354      1.55593  0.12095583
+
+@regcrits
+
+Information Criteria
+AIC          2.352
+SBC          2.447
+Hannan-Quinn 2.390
+(log) FPE    2.352
+
+BOXJENK(CONST,AR=2,MA=2) HOUSING_PRICES * 2023:01
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+NO CONVERGENCE IN 35 ITERATIONS. FINAL NORMED GRADIENT  176.43236
+SUBITERATIONS LIMIT EXCEEDED.
+ESTIMATION POSSIBLY HAS STALLED OR MACHINE ROUNDOFF IS MAKING FURTHER PROGRESS DIFFICULT
+TRY DIFFERENT SETTING FOR EXACTLINE, DERIVES OR ALPHA ON NLPAR
+RESTARTING ESTIMATION FROM LAST ESTIMATES OR DIFFERENT INITIAL GUESSES/PMETHOD OPTION MIGHT ALSO WORK
+
+Dependent Variable HOUSING_PRICES
+Monthly Data From 2001:02 To 2023:01
+Usable Observations                       264
+Degrees of Freedom                        259
+Centered R^2                        0.9998205
+R-Bar^2                             0.9998177
+Uncentered R^2                      0.9999890
+Mean of Dependent Variable       223.76700758
+Std Error of Dependent Variable   57.36807657
+Standard Error of Estimate         0.77460544
+Sum of Squared Residuals         155.40351964
+Log Likelihood                      -304.6498
+Durbin-Watson Statistic                1.9929
+Q(36-4)                               42.3904
+Significance Level of Q             0.1035761
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                      -1936.37417  51588.07700     -0.03754  0.97008711
+2.  AR{1}                             1.95133      0.02790     69.94983  0.00000000
+3.  AR{2}                            -0.95130      0.02818    -33.76348  0.00000000
+4.  MA{1}                            -0.28191      0.06874     -4.10106  0.00005510
+5.  MA{2}                            -0.14406      0.06776     -2.12608  0.03444307
+
+*NO CONVERGENCE IN BJAUTOFIT RECCOMENDATION
+
+BOXJENK(CONST,AR=2,MA=1) HOUSING_PRICES
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in    16 Iterations. Final criterion was  0.0000000 <=  0.0000100
+
+Dependent Variable HOUSING_PRICES
+Monthly Data From 2001:02 To 2024:01
+Usable Observations                       276
+Degrees of Freedom                        272
+Centered R^2                        0.9998664
+R-Bar^2                             0.9998650
+Uncentered R^2                      0.9999896
+Mean of Dependent Variable       231.80416667
+Std Error of Dependent Variable   67.65018985
+Standard Error of Estimate         0.78614416
+Sum of Squared Residuals         168.10215967
+Log Likelihood                      -323.2026
+Durbin-Watson Statistic                1.9603
+Q(36-3)                               44.3859
+Significance Level of Q             0.0890500
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                       27.4621380  283.0718192      0.09701  0.92278614
+2.  AR{1}                           1.9049837    0.0343360     55.48060  0.00000000
+3.  AR{2}                          -0.9045374    0.0347239    -26.04938  0.00000000
+4.  MA{1}                          -0.2267623    0.0715785     -3.16802  0.00170982
+
+@REGCRITS
+
+Information Criteria
+AIC          2.378
+SBC          2.444
+Hannan-Quinn 2.405
+(log) FPE    2.378
+
+BOXJENK(DIFFS=1,CONST,AR=2,MA=1) HOUSING_PRICES
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     6 Iterations. Final criterion was  0.0000032 <=  0.0000100
+
+Dependent Variable HOUSING_PRICES, differenced 1 times
+Monthly Data From 2001:03 To 2024:01
+Usable Observations                       275
+Degrees of Freedom                        271
+Centered R^2                        0.9998671
+R-Bar^2                             0.9998656
+Uncentered R^2                      0.9999896
+Mean of Dependent Variable       232.11261818
+Std Error of Dependent Variable   67.57881174
+Standard Error of Estimate         0.78343998
+Sum of Squared Residuals         166.33389326
+Log Likelihood                      -321.0767
+Durbin-Watson Statistic                1.9977
+Q(36-3)                               38.3283
+Significance Level of Q             0.2405022
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                      0.956708432  0.567175431      1.68679  0.09279358
+2.  AR{1}                         1.391369419  0.178222278      7.80693  0.00000000
+3.  AR{2}                        -0.416462108  0.162686358     -2.55991  0.01101287
+4.  MA{1}                        -0.700940296  0.151866134     -4.61551  0.00000606
+
+@REGCRITS
+
+Information Criteria
+AIC          2.371
+SBC          2.437
+Hannan-Quinn 2.398
+(log) FPE    2.371
+
+BOXJENK(DIFFS=1,CONST,AR=2,MA=2) HOUSING_PRICES
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     9 Iterations. Final criterion was  0.0000064 <=  0.0000100
+
+Dependent Variable HOUSING_PRICES, differenced 1 times
+Monthly Data From 2001:03 To 2024:01
+Usable Observations                       275
+Degrees of Freedom                        270
+Centered R^2                        0.9998671
+R-Bar^2                             0.9998651
+Uncentered R^2                      0.9999896
+Mean of Dependent Variable       232.11261818
+Std Error of Dependent Variable   67.57881174
+Standard Error of Estimate         0.78485158
+Sum of Squared Residuals         166.31783879
+Log Likelihood                      -321.0634
+Durbin-Watson Statistic                1.9920
+Q(36-4)                               38.2612
+Significance Level of Q             0.2064169
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                      0.957824133  0.574617902      1.66689  0.09669604
+2.  AR{1}                         1.444983260  0.374751843      3.85584  0.00014424
+3.  AR{2}                        -0.467053735  0.351624017     -1.32828  0.18520861
+4.  MA{1}                        -0.757397573  0.380537386     -1.99034  0.04756206
+5.  MA{2}                         0.023167032  0.146579769      0.15805  0.87453501
+
+@REGCRITS
+
+Information Criteria
+AIC          2.379
+SBC          2.458
+Hannan-Quinn 2.410
+(log) FPE    2.379
+
+
+BOXJENK(DIFFS=1,REGRESSORS,CONST,AR=2,MA=1) HOUSING_PRICES
+# COVID TIME
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in    19 Iterations. Final criterion was  0.0000054 <=  0.0000100
+
+Dependent Variable HOUSING_PRICES, differenced 1 times
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+Degrees of Freedom                        257
+Centered R^2                        0.9998216
+R-Bar^2                             0.9998181
+Uncentered R^2                      0.9999891
+Mean of Dependent Variable       224.05897338
+Std Error of Dependent Variable   57.28060165
+Standard Error of Estimate         0.77252298
+Sum of Squared Residuals         153.37547896
+Log Likelihood                      -302.2675
+Durbin-Watson Statistic                1.9759
+Q(36-3)                               39.8739
+Significance Level of Q             0.1909347
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.253814597  1.031064878     -0.24617  0.80574912
+2.  AR{1}                         1.392696999  0.160356803      8.68499  0.00000000
+3.  AR{2}                        -0.420442267  0.143307077     -2.93386  0.00365024
+4.  MA{1}                        -0.744692935  0.132200271     -5.63307  0.00000005
+5.  COVID                         0.771935213  0.496125353      1.55593  0.12095583
+6.  TIME                          0.007235520  0.006002637      1.20539  0.22916136
+
+@REGCRITS
+
+Information Criteria
+AIC          2.352
+SBC          2.447
+Hannan-Quinn 2.390
+(log) FPE    2.352
+
+
+BOXJENK(CONST,AR=2,MA=1) HOUSING_PRICES
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in    16 Iterations. Final criterion was  0.0000000 <=  0.0000100
+
+Dependent Variable HOUSING_PRICES
+Monthly Data From 2001:02 To 2024:01
+Usable Observations                       276
+Degrees of Freedom                        272
+Centered R^2                        0.9998664
+R-Bar^2                             0.9998650
+Uncentered R^2                      0.9999896
+Mean of Dependent Variable       231.80416667
+Std Error of Dependent Variable   67.65018985
+Standard Error of Estimate         0.78614416
+Sum of Squared Residuals         168.10215967
+Log Likelihood                      -323.2026
+Durbin-Watson Statistic                1.9603
+Q(36-3)                               44.3859
+Significance Level of Q             0.0890500
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                       27.4621380  283.0718192      0.09701  0.92278614
+2.  AR{1}                           1.9049837    0.0343360     55.48060  0.00000000
+3.  AR{2}                          -0.9045374    0.0347239    -26.04938  0.00000000
+4.  MA{1}                          -0.2267623    0.0715785     -3.16802  0.00170982
+
+@REGCRITS
+
+Information Criteria
+AIC          2.378
+SBC          2.444
+Hannan-Quinn 2.405
+(log) FPE    2.378
+
+
+BOXJENK(DIFFS=2,REGRESSORS,CONST,AR=2,MA=1) HOUSING_PRICES
+# COVID
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in    13 Iterations. Final criterion was  0.0000099 <=  0.0000100
+
+Dependent Variable HOUSING_PRICES, differenced 2 times
+Monthly Data From 2001:04 To 2023:01
+Usable Observations                       262
+Degrees of Freedom                        257
+Centered R^2                        0.9998091
+R-Bar^2                             0.9998061
+Uncentered R^2                      0.9999884
+Mean of Dependent Variable       224.35022901
+Std Error of Dependent Variable   57.19477893
+Standard Error of Estimate         0.79636450
+Sum of Squared Residuals         162.98847859
+Log Likelihood                      -309.5808
+Durbin-Watson Statistic                2.0779
+Q(36-3)                               51.0398
+Significance Level of Q             0.0233458
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.027079711  0.040144785     -0.67455  0.50056731
+2.  AR{1}                        -1.192477557  0.065954010    -18.08044  0.00000000
+3.  AR{2}                        -0.264222436  0.060501797     -4.36718  0.00001826
+4.  MA{1}                         0.970196793  0.030943347     31.35397  0.00000000
+5.  COVID                         0.249893417  0.143174614      1.74538  0.08211472
+
+@regcrits
+
+Information Criteria
+AIC          2.409
+SBC          2.491
+Hannan-Quinn 2.442
+(log) FPE    2.409
+
+BOXJENK(DIFFS=1,REGRESSORS,CONST,AR=2,MA=1,DEFINE=HOUSE_ARIMA) HOUSING_PRICES * 2023:01
+# COVID
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in    19 Iterations. Final criterion was  0.0000024 <=  0.0000100
+
+Dependent Variable HOUSING_PRICES, differenced 1 times
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+Degrees of Freedom                        258
+Centered R^2                        0.9998207
+R-Bar^2                             0.9998180
+Uncentered R^2                      0.9999890
+Mean of Dependent Variable       224.05897338
+Std Error of Dependent Variable   57.28060165
+Standard Error of Estimate         0.77282404
+Sum of Squared Residuals         154.09230621
+Log Likelihood                      -302.8806
+Durbin-Watson Statistic                1.9731
+Q(36-3)                               40.1143
+Significance Level of Q             0.1839328
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                      0.860711867  0.553748095      1.55434  0.12132954
+2.  AR{1}                         1.401242800  0.151119694      9.27240  0.00000000
+3.  AR{2}                        -0.423020353  0.137880964     -3.06801  0.00238445
+4.  MA{1}                        -0.750037294  0.122047641     -6.14545  0.00000000
+5.  COVID                         0.778099025  0.494047154      1.57495  0.11649365
+
+UFORECAST(FROM=2023:02,TO=2024:01,EQUATION=HOUSE_ARIMA,PRINT) HOUSE_ARIMA_FORE
+
+    Entry      HOUSING_PRICES
+       2023:02    393.4268487
+       2023:03    394.2824485
+       2023:04    395.1376312
+       2023:05    395.9927580
+       2023:06    396.8479827
+       2023:07    397.7033684
+       2023:08    398.5589381
+       2023:09    399.4146977
+       2023:10    400.2706454
+       2023:11    401.1267765
+       2023:12    401.9830849
+       2024:01    402.8395642
+
+@uforeerrors HOUSING_PRICES HOUSE_ARIMA_FORE 2023:02 2024:01
+
+Forecast Analysis for HOUSING_PRICES
+From 2023:02 to 2024:01
+Mean Error                 10.4896046
+Mean Absolute Error        10.4896046
+Root Mean Square Error     11.6764138
+Mean Square Error          136.338640
+Theil's U                    4.978334
+
+Mean Pct Error               0.025435
+Mean Abs Pct Error           0.025435
+Root Mean Square Pct Error   0.028190
+Theil's Relative U           4.867271
+
+FILTER HOUSING_PRICES 2023:02 2024:01 HOUSE_TRUNC
+GRAPH(STYLE=LINE,HEADER="Housing Prices Actual versus Forecast",VLABEL="Index",HLABEL="Month",KEY=BELOW, MAX=450, MIN=350) 2
+# HOUSE_TRUNC
+# HOUSE_ARIMA_FORE
+
+@DFUNIT(LAGS=3) HOUSING_PRICES
+
+Dickey-Fuller Unit Root Test, Series HOUSING_PRICES
+Regression Run From 2001:04 to 2024:01
+Observations        275
+With intercept
+Using fixed lags 3
+Null is unit root. Reject in left tail.
+
+Sig Level    Crit Value
+1%(**)         -3.45570
+5%(*)          -2.87217
+10%            -2.57239
+
+T-Statistic     0.63118
+*EVIDENCE OF A UNIT ROOT
+
+
+
+*Let's move on to our next variable, the FED_FUND
+LINREG FED_FUND * 2023:01
+# TIME COVID HCRASH
+
+Linear Regression - Estimation by Least Squares
+Dependent Variable FED_FUND
+Monthly Data From 2000:12 To 2023:01
+Usable Observations                       266
+Degrees of Freedom                        263
+Centered R^2                       -0.4099369
+R-Bar^2                            -0.4206588
+Uncentered R^2                      0.2070731
+Mean of Dependent Variable       1.4719548872
+Std Error of Dependent Variable  1.6717944076
+Standard Error of Estimate       1.9926350454
+Sum of Squared Residuals         1044.2663335
+Log Likelihood                      -559.3249
+Durbin-Watson Statistic                0.0165
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  TIME                          0.007231950  0.000911048      7.93806  0.00000000
+2.  COVID                        -1.684616250  0.479264685     -3.51500  0.00051766
+3.  HCRASH                        0.277790614  0.424977578      0.65366  0.51390231
+
+@REGCRITS
+
+Information Criteria
+AIC          4.236
+SBC          4.289
+Hannan-Quinn 4.257
+(log) FPE    4.236
+
+BOXJENK(DIFFS=1,REGRESSORS,CONST,AR=1) FED_FUND
+# TIME COVID
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     8 Iterations. Final criterion was  0.0000027 <=  0.0000100
+
+Dependent Variable FED_FUND, differenced 1 times
+Monthly Data From 2001:02 To 2024:01
+Usable Observations                       276
+Degrees of Freedom                        272
+Centered R^2                        0.9835792
+R-Bar^2                             0.9833980
+Uncentered R^2                      0.9910060
+Mean of Dependent Variable       1.5950724638
+Std Error of Dependent Variable  1.7584944992
+Standard Error of Estimate       0.2265795130
+Sum of Squared Residuals         13.964010997
+Regression F(3,272)                 5430.7712
+Significance Level of F             0.0000000
+Log Likelihood                        20.1536
+Durbin-Watson Statistic                1.9948
+Q(36-1)                              122.9632
+Significance Level of Q             0.0000000
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.098977354  0.033093063     -2.99088  0.00303669
+2.  AR{1}                         0.146731514  0.057648073      2.54530  0.01147097
+3.  TIME                          0.000807086  0.000216665      3.72503  0.00023745
+4.  COVID                        -0.176958219  0.063068126     -2.80583  0.00538119
+
+@REGCRITS
+
+Information Criteria
+AIC          -0.110
+SBC          -0.044
+Hannan-Quinn -0.083
+(log) FPE    -0.110
+
+BOXJENK(DIFFS=1,REGRESSORS,CONST,AR=1,MA=1) FED_FUND * 2023:01
+# TIME COVID
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in    49 Iterations. Final criterion was  0.0000099 <=  0.0000100
+
+Dependent Variable FED_FUND, differenced 1 times
+Monthly Data From 2001:02 To 2023:01
+Usable Observations                       264
+Degrees of Freedom                        259
+Centered R^2                        0.9803319
+R-Bar^2                             0.9800281
+Uncentered R^2                      0.9889573
+Mean of Dependent Variable       1.4376136364
+Std Error of Dependent Variable  1.6297276319
+Standard Error of Estimate       0.2303163252
+Sum of Squared Residuals         13.738812896
+Log Likelihood                        15.5558
+Durbin-Watson Statistic                2.0255
+Q(36-2)                              101.5052
+Significance Level of Q             0.0000000
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.103083422  0.037347552     -2.76011  0.00619090
+2.  AR{1}                         0.302277509  0.169376391      1.78465  0.07548856
+3.  MA{1}                        -0.131430047  0.182643769     -0.71960  0.47242151
+4.  TIME                          0.000868559  0.000257494      3.37312  0.00085692
+5.  COVID                        -0.191922894  0.069328643     -2.76831  0.00604178
+
+@REGCRITS
+
+Information Criteria
+AIC          -0.072
+SBC           0.009
+Hannan-Quinn -0.040
+(log) FPE    -0.072
+
+BOXJENK(DIFFS=1,REGRESSORS,CONST,AR=2) FED_FUND * 2023:01
+# COVID TIME
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     9 Iterations. Final criterion was  0.0000070 <=  0.0000100
+
+Dependent Variable FED_FUND, differenced 1 times
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+Degrees of Freedom                        258
+Centered R^2                        0.9813105
+R-Bar^2                             0.9810207
+Uncentered R^2                      0.9895024
+Mean of Dependent Variable       1.4219011407
+Std Error of Dependent Variable  1.6126759913
+Standard Error of Estimate       0.2221707808
+Sum of Squared Residuals         12.734842808
+Regression F(4,258)                 3386.6327
+Significance Level of F             0.0000000
+Log Likelihood                        24.9765
+Durbin-Watson Statistic                2.0806
+Q(36-2)                               61.7598
+Significance Level of Q             0.0024862
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.116811644  0.047642152     -2.45185  0.01487561
+2.  AR{1}                         0.156569123  0.060036999      2.60788  0.00964151
+3.  AR{2}                         0.238009695  0.058461753      4.07120  0.00006224
+4.  COVID                        -0.228906884  0.082673022     -2.76882  0.00603410
+5.  TIME                          0.000992227  0.000324892      3.05402  0.00249434
+
+@REGCRITS
+
+Information Criteria
+AIC          -0.144
+SBC          -0.063
+Hannan-Quinn -0.112
+(log) FPE    -0.144
+
+*BEST ONE SO FAR
+BOXJENK(DIFFS=1,REGRESSORS,CONST,AR=3) FED_FUND * 2023:01
+# COVID TIME
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     9 Iterations. Final criterion was  0.0000082 <=  0.0000100
+
+Dependent Variable FED_FUND, differenced 1 times
+Monthly Data From 2001:04 To 2023:01
+Usable Observations                       262
+Degrees of Freedom                        256
+Centered R^2                        0.9814365
+R-Bar^2                             0.9810739
+Uncentered R^2                      0.9895715
+Mean of Dependent Variable       1.4059923664
+Std Error of Dependent Variable  1.5949516765
+Standard Error of Estimate       0.2194207717
+Sum of Squared Residuals         12.325241611
+Regression F(5,256)                 2706.9005
+Significance Level of F             0.0000000
+Log Likelihood                        28.6652
+Durbin-Watson Statistic                2.0260
+Q(36-3)                               55.1460
+Significance Level of Q             0.0091626
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.128866515  0.058090656     -2.21837  0.02740739
+2.  AR{1}                         0.109453056  0.061695374      1.77409  0.07723709
+3.  AR{2}                         0.252210180  0.060807113      4.14771  0.00004572
+4.  AR{3}                         0.143043090  0.059722236      2.39514  0.01733326
+5.  COVID                        -0.248241226  0.089970720     -2.75913  0.00621385
+6.  TIME                          0.001089182  0.000388961      2.80024  0.00549586
+
+@REGCRITS
+
+Information Criteria
+AIC          -0.165
+SBC          -0.070
+Hannan-Quinn -0.127
+(log) FPE    -0.165
+
+BOXJENK(DIFFS=1,REGRESSORS,CONST,AR=4) FED_FUND * 2023:01
+# TIME COVID
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     9 Iterations. Final criterion was  0.0000075 <=  0.0000100
+
+Dependent Variable FED_FUND, differenced 1 times
+Monthly Data From 2001:05 To 2023:01
+Usable Observations                       261
+Degrees of Freedom                        254
+Centered R^2                        0.9813478
+R-Bar^2                             0.9809072
+Uncentered R^2                      0.9895123
+Mean of Dependent Variable       1.3911111111
+Std Error of Dependent Variable  1.5796871377
+Standard Error of Estimate       0.2182757644
+Sum of Squared Residuals         12.101654573
+Regression F(6,254)                 2227.2871
+Significance Level of F             0.0000000
+Log Likelihood                        30.4458
+Durbin-Watson Statistic                2.0342
+Q(36-4)                               56.3287
+Significance Level of Q             0.0049993
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.124657036  0.067197037     -1.85510  0.06474098
+2.  AR{1}                         0.094708458  0.062332138      1.51942  0.12990154
+3.  AR{2}                         0.227848919  0.062273219      3.65886  0.00030804
+4.  AR{3}                         0.120530231  0.062780344      1.91987  0.05599409
+5.  AR{4}                         0.126819382  0.060506202      2.09597  0.03707437
+6.  TIME                          0.001081854  0.000442001      2.44763  0.01505774
+7.  COVID                        -0.245961302  0.092706488     -2.65312  0.00847785
+
+@REGCRITS
+
+Information Criteria
+AIC          -0.172
+SBC          -0.063
+Hannan-Quinn -0.128
+(log) FPE    -0.172
+
+*SBC STARTS GOING DOWN FROM HERE ARIMA(3,1,0) THUS FAR
+*Let's try it with housing crash
+
+BOXJENK(DIFFS=1,REGRESSORS,CONST,AR=3) FED_FUND * 2023:01
+# TIME COVID HCRASH
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in    10 Iterations. Final criterion was  0.0000052 <=  0.0000100
+
+Dependent Variable FED_FUND, differenced 1 times
+Monthly Data From 2001:04 To 2023:01
+Usable Observations                       262
+Degrees of Freedom                        255
+Centered R^2                        0.9814365
+R-Bar^2                             0.9809997
+Uncentered R^2                      0.9895715
+Mean of Dependent Variable       1.4059923664
+Std Error of Dependent Variable  1.5949516765
+Standard Error of Estimate       0.2198505653
+Sum of Squared Residuals         12.325239121
+Regression F(6,255)                 2246.9393
+Significance Level of F             0.0000000
+Log Likelihood                        28.6652
+Durbin-Watson Statistic                2.0261
+Q(36-3)                               55.1586
+Significance Level of Q             0.0091352
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.129007774  0.060487933     -2.13279  0.03389765
+2.  AR{1}                         0.109588572  0.063183792      1.73444  0.08404825
+3.  AR{2}                         0.252357430  0.062251979      4.05381  0.00006697
+4.  AR{3}                         0.143125809  0.060477656      2.36659  0.01870064
+5.  TIME                          0.001089840  0.000394974      2.75927  0.00621302
+6.  COVID                        -0.248324660  0.090196645     -2.75315  0.00632691
+7.  HCRASH                        0.000697710  0.090434856      0.00772  0.99385037
+
+@regcrits
+
+Information Criteria
+AIC          -0.158
+SBC          -0.049
+Hannan-Quinn -0.114
+(log) FPE    -0.158
+
+*HOUSING CRASH SEEMED TO HAVE A LASTING EFFECT ON FEDERAL FUND RATE-- LET'S CREATE A MORE LONG-LASTING VARIABLE TO ACCOUNT FOR TIME TO ECONOMIC RECOVERY
+SET HCRASH_FED = T>=2008:01.AND.T<=2014:12
+BOXJENK(DIFFS=1,REGRESSORS,CONST,AR=3) FED_FUND * 2023:01
+# TIME COVID HCRASH_FED
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in    10 Iterations. Final criterion was  0.0000031 <=  0.0000100
+
+Dependent Variable FED_FUND, differenced 1 times
+Monthly Data From 2001:04 To 2023:01
+Usable Observations                       262
+Degrees of Freedom                        255
+Centered R^2                        0.9817698
+R-Bar^2                             0.9813408
+Uncentered R^2                      0.9897587
+Mean of Dependent Variable       1.4059923664
+Std Error of Dependent Variable  1.5949516765
+Standard Error of Estimate       0.2178680787
+Sum of Squared Residuals         12.103957429
+Regression F(6,255)                 2288.7943
+Significance Level of F             0.0000000
+Log Likelihood                        31.0385
+Durbin-Watson Statistic                2.0217
+Q(36-3)                               54.8204
+Significance Level of Q             0.0098949
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -0.085157811  0.058915065     -1.44543  0.14956396
+2.  AR{1}                         0.106635320  0.061917591      1.72221  0.08624336
+3.  AR{2}                         0.244007892  0.061066373      3.99578  0.00008444
+4.  AR{3}                         0.135322261  0.059737499      2.26528  0.02433474
+5.  TIME                          0.001056810  0.000372713      2.83545  0.00494299
+6.  COVID                        -0.272527580  0.088569215     -3.07700  0.00231891
+7.  HCRASH_FED                   -0.116754469  0.053811235     -2.16970  0.03095302
+
+@REGCRITS
+
+Information Criteria
+AIC          -0.176
+SBC          -0.067
+Hannan-Quinn -0.132
+(log) FPE    -0.176
+
+*BETTER AKAIKE INFORMATION CRITERIA BUT WORSE SBC COMPARED TO MODEL WITHOUT CRASH- WE'LL KEEP ARIMA(3,1,0) FOR FED_FUND
+@DFUNIT (LAGS=4) FED_FUND
+
+Dickey-Fuller Unit Root Test, Series HOUSING_PRICES
+Regression Run From 2001:02 to 2024:01
+Observations        277
+With intercept
+Using fixed lags 0
+Null is unit root. Reject in left tail.
+
+Sig Level    Crit Value
+1%(**)         -3.45554
+5%(*)          -2.87209
+10%            -2.57235
+
+T-Statistic     8.84899
+
+UFORECAST(FROM=2023:02,TO=2024:01,EQUATION=FED_ARIMA,STDERRS=FED_ARIMA_STD,PRINT) FED_ARIMA_FORE
+
+ Entry    FED_FUND
+ 2023:02 4.655230494
+ 2023:03 5.006101169
+ 2023:04 5.280478283
+ 2023:05 5.528489553
+ 2023:06 5.758529661
+ 2023:07 5.969550625
+ 2023:08 6.170725389
+ 2023:09 6.363994449
+ 2023:10 6.551733801
+ 2023:11 6.736005044
+ 2023:12 6.917910652
+ 2024:01 7.098431120
+
+@UFOREERRORS FED_FUND FED_ARIMA_FORE 2023:02 2024:01
+
+Forecast Analysis for FED_FUND
+From 2023:02 to 2024:01
+Mean Error                 -0.9439317
+Mean Absolute Error         0.9439317
+Root Mean Square Error      1.0457898
+Mean Square Error            1.093676
+Theil's U                    7.245444
+
+Mean Pct Error              -0.182429
+Mean Abs Pct Error           0.182429
+Root Mean Square Pct Error   0.199143
+Theil's Relative U           6.500393
+FILTER(TYPE=CENTERED,WIDTH=1) FED_FUND 2023:02 2024:01 FED_FUND_TRUNC
+GRAPH(STYLE=LINE,HEADER="Federal Funds Rate Actual versus Forecast",VLABEL="Rate",HLABEL="Month",KEY=BELOW, MAX=10, MIN=0) 2
+# FED_ARIMA_FORE
+# FED_FUND_TRUNC
+
+
+
+*Let's move on now to our final variable, GOVT_JOBS
+*GOVT_JOBS likely to follow monthly seasonality- let's try it
+SEASONAL DEC
+SET NOV = DEC{-1}
+SET OCT = DEC{-2}
+SET SEP = DEC{-3}
+SET AUG = DEC{-4}
+SET JUL = DEC{-5}
+SET JUN = DEC{-6}
+SET MAY = DEC{-7}
+SET APR = DEC{-8}
+SET MAR = DEC{-9}
+SET FEB = DEC{-10}
+SET JAN = DEC{-11}
+LINREG GOVT_JOBS * 2023:01
+# DEC NOV OCT SEP AUG JUL JUN MAY APR MAR FEB JAN
+
+Linear Regression - Estimation by Least Squares
+Dependent Variable GOVT_JOBS
+Monthly Data From 2000:12 To 2023:01
+Usable Observations                       266
+Degrees of Freedom                        254
+Centered R^2                        0.0026356
+R-Bar^2                            -0.0405573
+Uncentered R^2                      0.8751625
+Mean of Dependent Variable       509.17293233
+Std Error of Dependent Variable  192.95959148
+Standard Error of Estimate       196.83366572
+Sum of Squared Residuals         9840846.9585
+Regression F(11,254)                   0.0610
+Significance Level of F             0.9999930
+Log Likelihood                     -1776.4056
+Durbin-Watson Statistic                0.0726
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  DEC                          515.45454545  41.96507854     12.28294  0.00000000
+2.  NOV                          507.13636364  41.96507854     12.08472  0.00000000
+3.  OCT                          505.68181818  41.96507854     12.05006  0.00000000
+4.  SEP                          497.13636364  41.96507854     11.84643  0.00000000
+5.  AUG                          520.77272727  41.96507854     12.40967  0.00000000
+6.  JUL                          505.86363636  41.96507854     12.05440  0.00000000
+7.  JUN                          499.36363636  41.96507854     11.89950  0.00000000
+8.  MAY                          515.22727273  41.96507854     12.27752  0.00000000
+9.  APR                          498.95454545  41.96507854     11.88976  0.00000000
+10. MAR                          496.18181818  41.96507854     11.82368  0.00000000
+11. FEB                          524.04347826  41.04265648     12.76826  0.00000000
+12. JAN                          522.95652174  41.04265648     12.74178  0.00000000
+
+*R^2 is too low
+LINREG GOVT_JOBS * 2023:01
+# COVID HCRASH TIME
+
+Linear Regression - Estimation by Least Squares
+Dependent Variable GOVT_JOBS
+Monthly Data From 2000:12 To 2023:01
+Usable Observations                       266
+Degrees of Freedom                        263
+Centered R^2                        0.1027901
+R-Bar^2                             0.0959672
+Uncentered R^2                      0.8876985
+Mean of Dependent Variable       509.17293233
+Std Error of Dependent Variable  192.95959148
+Standard Error of Estimate       183.46721559
+Sum of Squared Residuals         8852637.6486
+Log Likelihood                     -1762.3307
+Durbin-Watson Statistic                0.0848
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  COVID                        28.361425502 44.127175979      0.64272  0.52096561
+2.  HCRASH                       42.998404102 39.128817484      1.09889  0.27281945
+3.  TIME                          3.289723472  0.083882620     39.21818  0.00000000
+
+@regactfit
+
+
+BOXJENK(DIFFS=1,CONST,AR=1,MA=1) GOVT_JOBS
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     9 Iterations. Final criterion was  0.0000062 <=  0.0000100
+
+Dependent Variable GOVT_JOBS, differenced 1 times
+Monthly Data From 2001:02 To 2024:01
+Usable Observations                       276
+Degrees of Freedom                        273
+Centered R^2                        0.9532266
+R-Bar^2                             0.9528839
+Uncentered R^2                      0.9933876
+Mean of Dependent Variable       530.96014493
+Std Error of Dependent Variable  215.83750253
+Standard Error of Estimate        46.85021767
+Sum of Squared Residuals         599219.41044
+Log Likelihood                     -1451.8786
+Durbin-Watson Statistic                1.9615
+Q(36-2)                               35.1939
+Significance Level of Q             0.4114396
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                      1.644541784  1.242037034      1.32407  0.18658791
+2.  AR{1}                        -0.054685453  0.105704333     -0.51734  0.60533529
+3.  MA{1}                        -0.537384383  0.090229976     -5.95572  0.00000001
+
+@REGCRITS
+
+Information Criteria
+AIC          10.550
+SBC          10.602
+Hannan-Quinn 10.571
+(log) FPE    10.550
+
+
+BOXJENK(REGRESSORS,CONST,AR=2) GOVT_JOBS
+# TIME
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     3 Iterations. Final criterion was  0.0000046 <=  0.0000100
+
+Dependent Variable GOVT_JOBS
+Monthly Data From 2001:02 To 2024:01
+Usable Observations                       276
+Degrees of Freedom                        272
+Centered R^2                        0.9513821
+R-Bar^2                             0.9508458
+Uncentered R^2                      0.9931269
+Mean of Dependent Variable       530.96014493
+Std Error of Dependent Variable  215.83750253
+Standard Error of Estimate        47.85276241
+Sum of Squared Residuals         622849.22881
+Regression F(3,272)                 1774.2148
+Significance Level of F             0.0000000
+Log Likelihood                     -1457.2160
+Durbin-Watson Statistic                2.1336
+Q(36-2)                               48.3586
+Significance Level of Q             0.0524579
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     104.35295725 135.53930734      0.76991  0.44202189
+2.  AR{1}                          0.51083889   0.05547582      9.20832  0.00000000
+3.  AR{2}                          0.43417450   0.05515431      7.87200  0.00000000
+4.  TIME                           2.79225176   0.71617349      3.89885  0.00012181
+
+@REGCRITS
+
+Information Criteria
+AIC          10.596
+SBC          10.661
+Hannan-Quinn 10.622
+(log) FPE    10.596
+
+BOXJENK(DIFFS=1,REGRESSORS,CONST,AR=1,MA=1) GOVT_JOBS * 2023:01
+# TIME
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in    10 Iterations. Final criterion was  0.0000008 <=  0.0000100
+
+Dependent Variable GOVT_JOBS, differenced 1 times
+Monthly Data From 2001:02 To 2023:01
+Usable Observations                       264
+Degrees of Freedom                        260
+Centered R^2                        0.9466999
+R-Bar^2                             0.9460849
+Uncentered R^2                      0.9932847
+Mean of Dependent Variable       509.12878788
+Std Error of Dependent Variable  193.66983803
+Standard Error of Estimate        44.96942158
+Sum of Squared Residuals         525784.70800
+Log Likelihood                     -1377.3639
+Durbin-Watson Statistic                1.9987
+Q(36-2)                               36.9281
+Significance Level of Q             0.3351382
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -3.973369543  2.041374406     -1.94642  0.05268155
+2.  AR{1}                         0.036807784  0.096586534      0.38109  0.70345058
+3.  MA{1}                        -0.654300570  0.073517539     -8.89992  0.00000000
+4.  TIME                          0.046007653  0.013264900      3.46838  0.00061266
+
+@REGCRITS
+
+Information Criteria
+AIC          10.472
+SBC          10.540
+Hannan-Quinn 10.500
+(log) FPE    10.472
+
+
+BOXJENK(DIFFS=1,CONST,AR=1,MA=1) GOVT_JOBS * 2023:01
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     9 Iterations. Final criterion was  0.0000088 <=  0.0000100
+
+Dependent Variable GOVT_JOBS, differenced 1 times
+Monthly Data From 2001:02 To 2023:01
+Usable Observations                       264
+Degrees of Freedom                        261
+Centered R^2                        0.9446696
+R-Bar^2                             0.9442456
+Uncentered R^2                      0.9930289
+Mean of Dependent Variable       509.12878788
+Std Error of Dependent Variable  193.66983803
+Standard Error of Estimate        45.73001920
+Sum of Squared Residuals         545812.24529
+Log Likelihood                     -1382.2985
+Durbin-Watson Statistic                2.0021
+Q(36-2)                               34.2186
+Significance Level of Q             0.4572503
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                      2.197093970  1.213516977      1.81052  0.07136542
+2.  AR{1}                        -0.011437542  0.106067813     -0.10783  0.91421153
+3.  MA{1}                        -0.565695606  0.088114795     -6.41998  0.00000000
+
+@REGCRITS
+
+Information Criteria
+AIC          10.502
+SBC          10.556
+Hannan-Quinn 10.524
+(log) FPE    10.502
+
+BOXJENK(DIFFS=1,REGRESSORS,CONST,MA=1, DEFINE=GOVT_ARIMA) GOVT_JOBS * 2023:01
+# TIME
+
+Box-Jenkins - Estimation by LS Gauss-Newton
+Convergence in     7 Iterations. Final criterion was  0.0000069 <=  0.0000100
+
+Dependent Variable GOVT_JOBS, differenced 1 times
+Monthly Data From 2001:01 To 2023:01
+Usable Observations                       265
+Degrees of Freedom                        262
+Centered R^2                        0.9461031
+R-Bar^2                             0.9456916
+Uncentered R^2                      0.9932291
+Mean of Dependent Variable       509.02641509
+Std Error of Dependent Variable  193.30987464
+Standard Error of Estimate        45.04923439
+Sum of Squared Residuals         531711.58208
+Log Likelihood                     -1383.5655
+Durbin-Watson Statistic                1.9544
+Q(36-1)                               38.2799
+Significance Level of Q             0.3229033
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONSTANT                     -4.557263803  2.095339717     -2.17495  0.03052827
+2.  MA{1}                        -0.628856595  0.048059489    -13.08496  0.00000000
+3.  TIME                          0.049259440  0.013639554      3.61151  0.00036476
+
+
+
+@REGACTFIT
+@REGCRITS
+
+Information Criteria
+AIC          10.472
+SBC          10.526
+Hannan-Quinn 10.494
+(log) FPE    10.472
+
+@DFUNIT (LAGS=3) GOVT_JOBS
+
+Dickey-Fuller Unit Root Test, Series GOVT_JOBS
+Regression Run From 2001:03 to 2024:01
+Observations        276
+With intercept
+Using fixed lags 0
+Null is unit root. Reject in left tail.
+
+Sig Level    Crit Value
+1%(**)         -3.45562
+5%(*)          -2.87213
+10%            -2.57237
+
+T-Statistic    -1.83661
+*EVIDENCE OF UNIT ROOT
+
+UFORECAST(FROM=2023:02,TO=2024:01,EQUATION=GOVT_ARIMA,PRINT) GOVT_ARIMA_FORE
+
+  Entry    GOVT_JOBS
+  2023:02 1075.856216
+  2023:03 1084.500483
+  2023:04 1093.194008
+  2023:05 1101.936793
+  2023:06 1110.728838
+  2023:07 1119.570142
+  2023:08 1128.460705
+  2023:09 1137.400528
+  2023:10 1146.389610
+  2023:11 1155.427952
+  2023:12 1164.515553
+  2024:01 1173.652413
+
+@UFOREERRORS GOVT_JOBS GOVT_ARIMA_FORE 2023:02 2024:01
+
+Forecast Analysis for GOVT_JOBS
+From 2023:02 to 2024:01
+Mean Error                   -113.05277
+Mean Absolute Error           113.05277
+Root Mean Square Error        143.61068
+Mean Square Error          20624.027564
+Theil's U                      1.839689
+
+Mean Pct Error                -0.118280
+Mean Abs Pct Error             0.118280
+Root Mean Square Pct Error     0.156545
+Theil's Relative U             1.891496
+
+FILTER(TYPE=CENTERED,WIDTH=1) GOVT_JOBS 2023:02 2024:01 GOVT_TRUNC
+GRAPH(STYLE=LINE,HEADER="Government Job Openings Actual versus Forecast (ARIMA)",VLABEL="Openings",HLABEL="Month",$
+ KEY=BELOW, MAX=1500, MIN=500) 2
+# GOVT_TRUNC
+# GOVT_ARIMA_FORE
+
+*NOW LET'S DO OUR VARs; LET'S MAKE SURE EVERYONE IS STATIONARY
+DIFF CONS_CONF / CONS_CONF_DIF
+@BJIDENT CONS_CONF_DIF
+DIFF FED_FUND / FED_FUND_DIF
+@BJIDENT FED_FUND_DIF
+DIFF GOVT_JOBS / GOVT_JOBS_DIF
+@BJIDENT GOVT_JOBS_DIF
+DIFF HOUSING_PRICES / HOUSING_DIF
+@BJIDENT HOUSING_DIF
+
+*OK, now let's start our VAR analysis- but first let's look at cross-correlations
+CROSS(FROM=-12,TO=12,RESULTS=CROSSCORS) CONS_CONF_DIF FED_FUND_DIF
+* 9
+Cross Correlations of Series CONS_CONF_DIF and FED_FUND_DIF
+Monthly Data From 2001:01 To 2024:01
+
+
+  -12      -11      -10       -9       -8       -7       -6       -5       -4       -3
+-0.07018 -0.03541  0.01596  0.06788  0.06665  0.00847 -0.00684  0.01540  0.06189  0.09560
+   -2       -1       0        1        2        3        4        5        6        7
+ 0.10360  0.12708  0.18167  0.14222  0.08516  0.06781  0.02821  0.00563  0.01134  0.03821
+   8        9        10       11       12
+ 0.07617  0.09993 -0.00624 -0.06441 -0.02035
+CROSS(FROM=-12,TO=12,RESULTS=CROSSCORS) FED_FUND_DIF HOUSING_DIF
+
+Cross Correlations of Series FED_FUND_DIF and HOUSING_DIF
+Monthly Data From 2001:01 To 2024:01
+*8
+
+  -12      -11      -10       -9       -8       -7       -6       -5       -4       -3
+-0.03380  0.05388  0.11313  0.08857  0.09490  0.13822  0.13806  0.11192  0.10269  0.08346
+   -2       -1       0        1        2        3        4        5        6        7
+ 0.10016  0.17983  0.15081  0.16443  0.18284  0.21039  0.19799  0.21500  0.25253  0.25731
+   8        9        10       11       12
+ 0.27631  0.26351  0.25647  0.27489  0.26237
+
+@varlagselect(lags=9,crit=sbc)
+# CONS_CONF_DIF FED_FUND_DIF
+
+VAR Lag Selection
+Lags SBC/BIC
+   0 -0.0493643
+   1 -0.7467691
+   2 -1.3679479
+   3 -1.4116599*
+   4 -1.3594295
+   5 -1.3218135
+   6 -1.2518673
+   7 -1.1713055
+   8 -1.1075547
+   9 -1.0396715
+
+SYSTEM(MODEL=CONSCONF_FEDFUND)
+VARIABLES CONS_CONF_DIF FED_FUND_DIF
+LAGS 1 TO 3
+DET Constant
+END(SYSTEM)
+ESTIMATE
+
+VAR/System - Estimation by Least Squares
+Monthly Data From 2001:04 To 2024:01
+Usable Observations                       274
+
+Dependent Variable CONS_CONF_DIF
+Mean of Dependent Variable       -0.005999015
+Std Error of Dependent Variable   0.243881458
+Standard Error of Estimate        0.118166425
+Sum of Squared Residuals         3.7282021444
+Durbin-Watson Statistic                1.9139
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONS_CONF_DIF{1}              1.428593796  0.058857156     24.27222  0.00000000
+2.  CONS_CONF_DIF{2}             -1.051273782  0.083951561    -12.52239  0.00000000
+3.  CONS_CONF_DIF{3}              0.288254610  0.059568804      4.83902  0.00000221
+4.  FED_FUND_DIF{1}              -0.002033664  0.032402898     -0.06276  0.95000316
+5.  FED_FUND_DIF{2}               0.018870865  0.031458920      0.59986  0.54911003
+6.  FED_FUND_DIF{3}               0.040114556  0.030917928      1.29745  0.19559528
+7.  Constant                     -0.001450398  0.007157825     -0.20263  0.83957772
+
+    F-Tests, Dependent Variable CONS_CONF_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    CONS_CONF_DIF                    291.3499    0.0000000
+    FED_FUND_DIF                       0.8244    0.4813797
+
+
+Dependent Variable FED_FUND_DIF
+Mean of Dependent Variable       -0.000948905
+Std Error of Dependent Variable   0.237174711
+Standard Error of Estimate        0.219134121
+Sum of Squared Residuals         12.821276764
+Durbin-Watson Statistic                2.0293
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONS_CONF_DIF{1}              0.214823560  0.109147850      1.96819  0.05008092
+2.  CONS_CONF_DIF{2}             -0.228915376  0.155684253     -1.47038  0.14263567
+3.  CONS_CONF_DIF{3}              0.148459839  0.110467568      1.34392  0.18011436
+4.  FED_FUND_DIF{1}               0.097898405  0.060089662      1.62921  0.10444876
+5.  FED_FUND_DIF{2}               0.248459999  0.058339100      4.25889  0.00002849
+6.  FED_FUND_DIF{3}               0.161632899  0.057335855      2.81905  0.00517720
+7.  Constant                      0.001276139  0.013273853      0.09614  0.92348203
+
+    F-Tests, Dependent Variable FED_FUND_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    CONS_CONF_DIF                      1.3996    0.2432932
+    FED_FUND_DIF                      13.7956    0.0000000
+
+
+@varlagselect(lags=8,crit=sbc)
+# HOUSING_DIF FED_FUND_DIF
+
+VAR Lag Selection
+Lags SBC/BIC
+   0 3.65839723
+   1 2.37411466
+   2 2.32971150*
+   3 2.36311444
+   4 2.43405254
+   5 2.46879059
+   6 2.52321435
+   7 2.60056429
+   8 2.67141400
+
+SYSTEM(MODEL=HOUSINGDIF_FEDFUND)
+VARIABLES HOUSING_DIF FED_FUND_DIF
+LAGS 1 TO 2
+DET Constant
+END(SYSTEM)
+ESTIMATE
+
+VAR/System - Estimation by Least Squares
+Monthly Data From 2001:03 To 2024:01
+Usable Observations                       275
+
+Dependent Variable HOUSING_DIF
+Mean of Dependent Variable       0.9836727273
+Std Error of Dependent Variable  1.5431636271
+Standard Error of Estimate       0.7826675531
+Sum of Squared Residuals         165.39349463
+Durbin-Watson Statistic                2.0278
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  HOUSING_DIF{1}                0.729306214  0.059701314     12.21592  0.00000000
+2.  HOUSING_DIF{2}                0.152246912  0.059596014      2.55465  0.01117861
+3.  FED_FUND_DIF{1}               0.398249711  0.205935079      1.93386  0.05417532
+4.  FED_FUND_DIF{2}              -0.413368547  0.197356549     -2.09453  0.03714521
+5.  Constant                      0.110189390  0.057282988      1.92360  0.05545644
+
+    F-Tests, Dependent Variable HOUSING_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    HOUSING_DIF                      376.5468    0.0000000
+    FED_FUND_DIF                       3.4489    0.0331883
+
+
+Dependent Variable FED_FUND_DIF
+Mean of Dependent Variable       -0.000872727
+Std Error of Dependent Variable   0.236744885
+Standard Error of Estimate        0.221982800
+Sum of Squared Residuals         13.304618160
+Durbin-Watson Statistic                2.1063
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  HOUSING_DIF{1}               -0.003436692  0.016932687     -0.20296  0.83931761
+2.  HOUSING_DIF{2}                0.022520356  0.016902822      1.33234  0.18387090
+3.  FED_FUND_DIF{1}               0.150239005  0.058407999      2.57223  0.01063956
+4.  FED_FUND_DIF{2}               0.241406006  0.055974927      4.31275  0.00002263
+5.  Constant                     -0.018622068  0.016246793     -1.14620  0.25272738
+
+    F-Tests, Dependent Variable FED_FUND_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    HOUSING_DIF                        2.4462    0.0885392
+    FED_FUND_DIF                      15.0770    0.0000006
+
+@varlagselect(lags=8,crit=sbc)
+# CONS_CONF_DIF HOUSING_DIF
+
+VAR Lag Selection
+Lags SBC/BIC
+   0 3.78824084
+   1 1.76898139
+   2 1.16740230
+   3 1.15588432*
+   4 1.20930637
+   5 1.27354278
+   6 1.34372717
+   7 1.41331552
+   8 1.48039752
+
+SYSTEM(MODEL=CONSCONF_HOUSINGDIF)
+VARIABLES CONS_CONF_DIF HOUSING_DIF
+LAGS 1 TO 3
+DET Constant
+END(SYSTEM)
+ESTIMATE
+
+VAR/System - Estimation by Least Squares
+Monthly Data From 2001:04 To 2024:01
+Usable Observations                       274
+
+Dependent Variable CONS_CONF_DIF
+Mean of Dependent Variable       -0.005999015
+Std Error of Dependent Variable   0.243881458
+Standard Error of Estimate        0.118123477
+Sum of Squared Residuals         3.7254925952
+Durbin-Watson Statistic                1.9367
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONS_CONF_DIF{1}              1.436254911  0.058923107     24.37507  0.00000000
+2.  CONS_CONF_DIF{2}             -1.053387733  0.086144946    -12.22809  0.00000000
+3.  CONS_CONF_DIF{3}              0.295122430  0.060105518      4.91007  0.00000159
+4.  HOUSING_DIF{1}               -0.010571984  0.009350577     -1.13062  0.25922812
+5.  HOUSING_DIF{2}                0.015487611  0.011178514      1.38548  0.16706193
+6.  HOUSING_DIF{3}               -0.008505194  0.009342317     -0.91039  0.36343559
+7.  Constant                      0.002023097  0.008664591      0.23349  0.81555967
+
+    F-Tests, Dependent Variable CONS_CONF_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    CONS_CONF_DIF                    295.4613    0.0000000
+    HOUSING_DIF                        0.8898    0.4469027
+
+
+Dependent Variable HOUSING_DIF
+Mean of Dependent Variable       0.9844525547
+Std Error of Dependent Variable  1.5459330645
+Standard Error of Estimate       0.7765982272
+Sum of Squared Residuals         161.02898331
+Durbin-Watson Statistic                1.9842
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONS_CONF_DIF{1}              0.770380760  0.387387683      1.98866  0.04775993
+2.  CONS_CONF_DIF{2}             -0.365998252  0.566356614     -0.64623  0.51868362
+3.  CONS_CONF_DIF{3}             -0.261607153  0.395161402     -0.66203  0.50852549
+4.  HOUSING_DIF{1}                0.683720722  0.061475010     11.12193  0.00000000
+5.  HOUSING_DIF{2}                0.119756313  0.073492709      1.62950  0.10438656
+6.  HOUSING_DIF{3}                0.097229455  0.061420698      1.58301  0.11460340
+7.  Constant                      0.092609185  0.056965015      1.62572  0.10518886
+
+    F-Tests, Dependent Variable HOUSING_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    CONS_CONF_DIF                      3.7891    0.0109278
+    HOUSING_DIF                      269.1601    0.0000000
+
+@varlagselect(lags=8,crit=sbc)
+# FED_FUND_DIF GOVT_JOBS_DIF
+
+VAR Lag Selection
+Lags SBC/BIC
+   0 10.7897302
+   1 10.5938724
+   2 10.5380307*
+   3 10.5736027
+   4 10.6275766
+   5 10.6581004
+   6 10.7299145
+   7 10.8104777
+   8 10.8672075
+
+SYSTEM(MODEL=FEDFUND_GOVTJOBS)
+VARIABLES FED_FUND_DIF GOVT_JOBS_DIF
+LAGS 1 TO 2
+DET Constant
+END(SYSTEM)
+ESTIMATE
+
+VAR/System - Estimation by Least Squares
+Monthly Data From 2001:03 To 2024:01
+Usable Observations                       275
+
+Dependent Variable FED_FUND_DIF
+Mean of Dependent Variable       -0.000872727
+Std Error of Dependent Variable   0.236744885
+Standard Error of Estimate        0.223338294
+Sum of Squared Residuals         13.467598225
+Durbin-Watson Statistic                2.1077
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  FED_FUND_DIF{1}               0.167655311  0.058383328      2.87163  0.00440740
+2.  FED_FUND_DIF{2}               0.254976398  0.055687579      4.57869  0.00000715
+3.  GOVT_JOBS_DIF{1}              0.000302845  0.000285602      1.06038  0.28992133
+4.  GOVT_JOBS_DIF{2}             -0.000028886  0.000285629     -0.10113  0.91952183
+5.  Constant                     -0.000175011  0.013498693     -0.01297  0.98966527
+
+    F-Tests, Dependent Variable FED_FUND_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    FED_FUND_DIF                      17.8770    0.0000001
+    GOVT_JOBS_DIF                      0.7829    0.4581208
+
+
+Dependent Variable GOVT_JOBS_DIF
+Mean of Dependent Variable        1.334545455
+Std Error of Dependent Variable  54.124795707
+Standard Error of Estimate       47.563467570
+Sum of Squared Residuals         610816.53077
+Durbin-Watson Statistic                1.9960
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  FED_FUND_DIF{1}                9.80024857  12.43366503      0.78820  0.43126960
+2.  FED_FUND_DIF{2}               -2.63016930  11.85956208     -0.22178  0.82465571
+3.  GOVT_JOBS_DIF{1}              -0.55712541   0.06082345     -9.15971  0.00000000
+4.  GOVT_JOBS_DIF{2}              -0.21127655   0.06082918     -3.47328  0.00059865
+5.  Constant                       2.73129461   2.87476296      0.95009  0.34291423
+
+    F-Tests, Dependent Variable GOVT_JOBS_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    FED_FUND_DIF                       0.3130    0.7315403
+    GOVT_JOBS_DIF                     42.3040    0.0000000
+
+@varlagselect(lags=8,crit=sbc)
+# CONS_CONF_DIF GOVT_JOBS_DIF
+
+VAR Lag Selection
+Lags SBC/BIC
+   0 10.8958940
+   1  9.9874927
+   2  9.4044805
+   3  9.3881527*
+   4  9.4242808
+   5  9.4881865
+   6  9.5573341
+   7  9.6304664
+   8  9.7042769
+
+SYSTEM(MODEL=CONSCONF_GOVTJOBS)
+VARIABLES CONS_CONF_DIF GOVT_JOBS_DIF
+LAGS 1 TO 2
+DET Constant
+END(SYSTEM)
+ESTIMATE
+
+VAR/System - Estimation by Least Squares
+Monthly Data From 2001:03 To 2024:01
+Usable Observations                       275
+
+Dependent Variable CONS_CONF_DIF
+Mean of Dependent Variable       -0.006575745
+Std Error of Dependent Variable   0.243623813
+Standard Error of Estimate        0.123428448
+Sum of Squared Residuals         4.1133371024
+Durbin-Watson Statistic                1.5847
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONS_CONF_DIF{1}              1.234053594  0.045266440     27.26200  0.00000000
+2.  CONS_CONF_DIF{2}             -0.688226013  0.045079875    -15.26681  0.00000000
+3.  GOVT_JOBS_DIF{1}              0.000103758  0.000158315      0.65539  0.51277469
+4.  GOVT_JOBS_DIF{2}             -0.000065252  0.000158178     -0.41252  0.68028535
+5.  Constant                     -0.003401616  0.007475014     -0.45506  0.64942829
+
+    F-Tests, Dependent Variable CONS_CONF_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    CONS_CONF_DIF                    391.5204    0.0000000
+    GOVT_JOBS_DIF                      0.5417    0.5824130
+
+
+Dependent Variable GOVT_JOBS_DIF
+Mean of Dependent Variable        1.334545455
+Std Error of Dependent Variable  54.124795707
+Standard Error of Estimate       47.463217120
+Sum of Squared Residuals         608244.38442
+Durbin-Watson Statistic                1.9906
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONS_CONF_DIF{1}              22.63387594  17.40677195      1.30029  0.19460994
+2.  CONS_CONF_DIF{2}             -19.63233821  17.33503018     -1.13252  0.25841892
+3.  GOVT_JOBS_DIF{1}              -0.56082656   0.06087861     -9.21221  0.00000000
+4.  GOVT_JOBS_DIF{2}              -0.21378647   0.06082595     -3.51472  0.00051605
+5.  Constant                       2.70808711   2.87444421      0.94213  0.34697059
+
+    F-Tests, Dependent Variable GOVT_JOBS_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    CONS_CONF_DIF                      0.8852    0.4138350
+    GOVT_JOBS_DIF                     42.7971    0.0000000
+
+*Now to create our forecast, let's truncate ones that do exhibit casuality
+SYSTEM(MODEL=HOUSINGDIF_FEDFUND_TRUNC)
+VARIABLES HOUSING_DIF FED_FUND_DIF
+LAGS 1 TO 2
+DET Constant
+END(SYSTEM)
+ESTIMATE * 2023:01
+
+VAR/System - Estimation by Least Squares
+Monthly Data From 2001:03 To 2023:01
+Usable Observations                       263
+
+Dependent Variable HOUSING_DIF
+Mean of Dependent Variable       0.9338022814
+Std Error of Dependent Variable  1.5423269791
+Standard Error of Estimate       0.7771772469
+Sum of Squared Residuals         155.83315407
+Durbin-Watson Statistic                2.0475
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  HOUSING_DIF{1}                0.724118488  0.060743447     11.92093  0.00000000
+2.  HOUSING_DIF{2}                0.162262753  0.060765504      2.67031  0.00805947
+3.  FED_FUND_DIF{1}               0.302033929  0.206973630      1.45929  0.14570257
+4.  FED_FUND_DIF{2}              -0.481507882  0.201454009     -2.39016  0.01755895
+5.  Constant                      0.100693749  0.057364633      1.75533  0.08039002
+
+    F-Tests, Dependent Variable HOUSING_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    HOUSING_DIF                      371.8472    0.0000000
+    FED_FUND_DIF                       3.4484    0.0332696
+
+
+Dependent Variable FED_FUND_DIF
+Mean of Dependent Variable       -0.004714829
+Std Error of Dependent Variable   0.240082314
+Standard Error of Estimate        0.225353235
+Sum of Squared Residuals         13.102292760
+Durbin-Watson Statistic                2.0913
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  HOUSING_DIF{1}               -0.005013967  0.017613398     -0.28467  0.77612704
+2.  HOUSING_DIF{2}                0.023253232  0.017619794      1.31972  0.18809763
+3.  FED_FUND_DIF{1}               0.159876302  0.060014852      2.66395  0.00820930
+4.  FED_FUND_DIF{2}               0.246356886  0.058414362      4.21740  0.00003423
+5.  Constant                     -0.017533669  0.016633665     -1.05411  0.29281990
+
+    F-Tests, Dependent Variable FED_FUND_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    HOUSING_DIF                        2.1604    0.1173553
+    FED_FUND_DIF                      14.6339    0.0000010
+
+FORECAST(MODEL=HOUSINGDIF_FEDFUND_TRUNC,FROM=2023:02,TO=2024:01,RESULT=VARFORE1,STDERRS=VARFORE1STD,PRINT)
+
+
+   Entry     HOUSING_DIF  FED_FUND_DIF
+     2023:02  0.600943589   0.25541688
+     2023:03  0.511784703   0.16346455
+     2023:04  0.495183875   0.08293196
+     2023:05  0.488647938   0.04541362
+     2023:06  0.508666717   0.01922231
+     2023:07  0.532256859   0.00553969
+     2023:08  0.561065922  -0.00275303
+     2023:09  0.589838509  -0.00704555
+     2023:10  0.618044431  -0.00924915
+     2023:11  0.644538898  -0.01013131
+     2023:12  0.669095411  -0.01029218
+     2024:01  0.691552480  -0.01004227
+* THAT'S THE DIFFERENCED DATA, HAVE TO TURN IT BACK INTO LEVELS TO GET AN ACCURATE MSE
+SET VARFORE1(1) 2023:02 2024:01 = VARFORE1(1)+HOUSING_PRICES{12}
+PRINT 2023:02 2024:01 VARFORE1(1)
+
+
+ ENTRY      VARFORE1(1)
+ 2023:02   378.500943589
+ 2023:03   383.051784703
+ 2023:04   388.095183875
+ 2023:05   391.878647938
+ 2023:06   392.548666717
+ 2023:07   390.622256859
+ 2023:08   389.251065922
+ 2023:09   390.689838509
+ 2023:10   391.478044431
+ 2023:11   391.814538898
+ 2023:12   392.379095411
+ 2024:01   393.261552480
+
+@UFOREERRORS VARFORE1(1) HOUSING_PRICES
+
+Forecast Analysis for VARFORE1(1)
+From 2023:02 to 2024:01
+Mean Error                 -19.157365
+Mean Absolute Error         19.157365
+Root Mean Square Error      19.927269
+Mean Square Error          397.096037
+Theil's U                    7.876788
+
+Mean Pct Error              -0.049142
+Mean Abs Pct Error           0.049142
+Root Mean Square Pct Error   0.051061
+Theil's Relative U           7.848864
+
+* Let's truncate our other model
+SYSTEM(MODEL=CONSCONF_HOUSINGDIF_TRUNC)
+VARIABLES CONS_CONF_DIF HOUSING_DIF
+LAGS 1 TO 3
+DET Constant
+END(SYSTEM)
+ESTIMATE * 2023:01
+
+VAR/System - Estimation by Least Squares
+Monthly Data From 2001:04 To 2023:01
+Usable Observations                       262
+
+Dependent Variable CONS_CONF_DIF
+Mean of Dependent Variable       -0.012232214
+Std Error of Dependent Variable   0.239223121
+Standard Error of Estimate        0.117129039
+Sum of Squared Residuals         3.4983989950
+Durbin-Watson Statistic                1.9346
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONS_CONF_DIF{1}              1.408813129  0.060345745     23.34569  0.00000000
+2.  CONS_CONF_DIF{2}             -1.009749680  0.087508777    -11.53884  0.00000000
+3.  CONS_CONF_DIF{3}              0.274794237  0.060609228      4.53387  0.00000891
+4.  HOUSING_DIF{1}               -0.008044264  0.009508427     -0.84601  0.39833800
+5.  HOUSING_DIF{2}                0.012400992  0.011369967      1.09068  0.27644337
+6.  HOUSING_DIF{3}               -0.009435572  0.009450999     -0.99837  0.31904750
+7.  Constant                      0.000863832  0.008638190      0.10000  0.92042166
+
+    F-Tests, Dependent Variable CONS_CONF_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    CONS_CONF_DIF                    272.6161    0.0000000
+    HOUSING_DIF                        0.8142    0.4869957
+
+
+Dependent Variable HOUSING_DIF
+Mean of Dependent Variable       0.9344274809
+Std Error of Dependent Variable  1.5452454133
+Standard Error of Estimate       0.7664558242
+Sum of Squared Residuals         149.80090528
+Durbin-Watson Statistic                2.0080
+
+    Variable                        Coeff      Std Error      T-Stat      Signif
+************************************************************************************
+1.  CONS_CONF_DIF{1}              0.907883567  0.394883696      2.29912  0.02230719
+2.  CONS_CONF_DIF{2}             -0.552206597  0.572630090     -0.96433  0.33579217
+3.  CONS_CONF_DIF{3}             -0.201948682  0.396607845     -0.50919  0.61105949
+4.  HOUSING_DIF{1}                0.673300426  0.062220172     10.82126  0.00000000
+5.  HOUSING_DIF{2}                0.107949872  0.074401508      1.45091  0.14803401
+6.  HOUSING_DIF{3}                0.124165955  0.061844384      2.00772  0.04572839
+7.  Constant                      0.087951508  0.056525615      1.55596  0.12095818
+
+    F-Tests, Dependent Variable HOUSING_DIF
+              Variable           F-Statistic     Signif
+    *******************************************************
+    CONS_CONF_DIF                      4.3115    0.0054789
+    HOUSING_DIF                      265.9262    0.0000000
+
+FORECAST(MODEL=CONSCONF_HOUSINGDIF_TRUNC,FROM=2023:02,TO=2024:01,RESULT=VARFORE2,STDERRS=VARFORE2STD,PRINT)
+
+    Entry     CONS_CONF_DIF HOUSING_DIF
+      2023:02    0.19627434 0.888047537
+      2023:03    0.04974190 0.824468516
+      2023:04   -0.05335462 0.725441237
+      2023:05   -0.07458531 0.660113013
+      2023:06   -0.04076261 0.664790770
+      2023:07    0.00008124 0.711843331
+      2023:08    0.01793197 0.758609112
+      2023:09    0.01129569 0.782578355
+      2023:10   -0.00491154 0.785476925
+      2023:11   -0.01630557 0.781168120
+      2023:12   -0.01797156 0.781501533
+      2024:01   -0.01335062 0.789673151
+
+SET VARFORE2(2) 2023:02 2024:01 = VARFORE2(2)+HOUSING_PRICES{12}
+PRINT 2023:02 2024:01 VARFORE2(2)
+
+
+ ENTRY      VARFORE2(2)
+ 2023:02   378.788047537
+ 2023:03   383.364468516
+ 2023:04   388.325441237
+ 2023:05   392.050113013
+ 2023:06   392.704790770
+ 2023:07   390.801843331
+ 2023:08   389.448609112
+ 2023:09   390.882578355
+ 2023:10   391.645476925
+ 2023:11   391.951168120
+ 2023:12   392.491501533
+ 2024:01   393.359673151
+
+
+@UFOREERRORS VARFORE2(2) HOUSING_PRICES
+
+Forecast Analysis for VARFORE2(2)
+From 2023:02 to 2024:01
+Mean Error                 -18.970524
+Mean Absolute Error         18.970524
+Root Mean Square Error      19.756821
+Mean Square Error          390.331960
+Theil's U                    7.883457
+
+Mean Pct Error              -0.048638
+Mean Abs Pct Error           0.048638
+Root Mean Square Pct Error   0.050599
+Theil's Relative U           7.859846
+
