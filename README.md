@@ -2,6 +2,8 @@
 
 This repository contains a RATS Econometrics software coding file and supplementary materials for forecasting and causal analysis of selected macroeconomic variables using ARIMA and VAR models.
 
+### Please access the uploaded PDF file for the primary analysis.
+
 ## Overview
 
 In this project, we analyze the following macroeconomic variables:
