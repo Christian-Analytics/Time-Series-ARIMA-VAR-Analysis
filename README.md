@@ -1,4 +1,4 @@
-# 📈 Macroeconomic Forecasting and Causality Analysis 📊
+# 📈 Macroeconomic Forecasting and Causality Analysis 
 
 This repository contains a RATS Econometrics software coding file and supplementary materials for forecasting and causal analysis of selected macroeconomic variables using ARIMA and VAR models.
 
